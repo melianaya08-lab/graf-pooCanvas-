@@ -5,27 +5,29 @@ const ctx = canvas.getContext('2d');
 // Clase Ball
 class Ball {
 
-constructor(x, y, radius, speedX, speedY) {
+constructor(x, y, radius, speedX, speedY, color) {
 this.x = x;
 this.y = y;
 this.radius = radius;
 this.speedX = speedX;
 this.speedY = speedY;
+this.color = color;
 }
 
 draw() {
 ctx.beginPath();
 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-ctx.fillStyle = 'white';
+ctx.fillStyle = this.color;
 ctx.fill();
 ctx.closePath();
 }
 
 move() {
+
 this.x += this.speedX;
 this.y += this.speedY;
 
-// colisión arriba y abajo
+// rebote arriba y abajo
 if (this.y - this.radius <= 0 || this.y + this.radius >= canvas.height) {
 this.speedY = -this.speedY;
 }
@@ -33,8 +35,8 @@ this.speedY = -this.speedY;
 }
 
 reset() {
-this.x = canvas.width / 2;
-this.y = canvas.height / 2;
+this.x = canvas.width/2;
+this.y = canvas.height/2;
 this.speedX = -this.speedX;
 }
 
@@ -43,41 +45,53 @@ this.speedX = -this.speedX;
 // Clase Paddle
 class Paddle {
 
-constructor(x, y, width, height, isPlayerControlled = false) {
+constructor(x,y,width,height,color,isPlayer=false) {
+
 this.x = x;
 this.y = y;
 this.width = width;
 this.height = height;
-this.isPlayerControlled = isPlayerControlled;
-this.speed = 5;
+this.color = color;
+this.speed = 6;
+this.isPlayer = isPlayer;
+
 }
 
-draw() {
-ctx.fillStyle = 'white';
-ctx.fillRect(this.x, this.y, this.width, this.height);
+draw(){
+
+ctx.fillStyle = this.color;
+ctx.fillRect(this.x,this.y,this.width,this.height);
+
 }
 
-move(direction) {
+move(direction){
 
-if (direction === 'up' && this.y > 0) {
+if(direction === "up" && this.y > 0){
+
 this.y -= this.speed;
+
 }
 
-else if (direction === 'down' && this.y + this.height < canvas.height) {
+else if(direction === "down" && this.y + this.height < canvas.height){
+
 this.y += this.speed;
-}
 
 }
 
-// movimiento automático
-autoMove(ball) {
+}
 
-if (ball.y < this.y + this.height / 2) {
+autoMove(ball){
+
+if(ball.y < this.y + this.height/2){
+
 this.y -= this.speed;
+
 }
 
-else if (ball.y > this.y + this.height / 2) {
+else if(ball.y > this.y + this.height/2){
+
 this.y += this.speed;
+
 }
 
 }
@@ -87,96 +101,131 @@ this.y += this.speed;
 // Clase Game
 class Game {
 
-constructor() {
+constructor(){
 
-this.ball = new Ball(canvas.width/2, canvas.height/2, 10, 4, 4);
+// 5 pelotas
+this.balls = [
 
-this.paddle1 = new Paddle(0, canvas.height/2 - 50, 10, 100, true);
+new Ball(400,300,10,3,3,"white"),
+new Ball(400,300,8,4,3,"yellow"),
+new Ball(400,300,12,5,4,"red"),
+new Ball(400,300,6,4,5,"cyan"),
+new Ball(400,300,14,3,4,"lime")
 
-this.paddle2 = new Paddle(canvas.width - 10, canvas.height/2 - 50, 10, 100);
+];
+
+// paleta jugador doble altura
+this.paddle1 = new Paddle(
+0,
+canvas.height/2 - 100,
+10,
+200,
+"blue",
+true
+);
+
+// paleta CPU
+this.paddle2 = new Paddle(
+canvas.width-10,
+canvas.height/2 - 50,
+10,
+100,
+"orange"
+);
 
 this.keys = {};
 
 }
 
-draw() {
+draw(){
 
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
-this.ball.draw();
+this.balls.forEach(ball => ball.draw());
 
 this.paddle1.draw();
-
 this.paddle2.draw();
 
 }
 
-update() {
+update(){
 
-this.ball.move();
+this.balls.forEach(ball => {
 
-// jugador
-if (this.keys['ArrowUp']) {
-this.paddle1.move('up');
-}
+ball.move();
 
-if (this.keys['ArrowDown']) {
-this.paddle1.move('down');
-}
+// colisión jugador
+if(
+ball.x - ball.radius <= this.paddle1.x + this.paddle1.width &&
+ball.y >= this.paddle1.y &&
+ball.y <= this.paddle1.y + this.paddle1.height
+){
 
-// CPU
-this.paddle2.autoMove(this.ball);
-
-// colisiones
-if (
-this.ball.x - this.ball.radius <= this.paddle1.x + this.paddle1.width &&
-this.ball.y >= this.paddle1.y &&
-this.ball.y <= this.paddle1.y + this.paddle1.height
-) {
-
-this.ball.speedX = -this.ball.speedX;
+ball.speedX = -ball.speedX;
 
 }
 
-if (
-this.ball.x + this.ball.radius >= this.paddle2.x &&
-this.ball.y >= this.paddle2.y &&
-this.ball.y <= this.paddle2.y + this.paddle2.height
-) {
+// colisión CPU
+if(
+ball.x + ball.radius >= this.paddle2.x &&
+ball.y >= this.paddle2.y &&
+ball.y <= this.paddle2.y + this.paddle2.height
+){
 
-this.ball.speedX = -this.ball.speedX;
-
-}
-
-// reset pelota
-if (this.ball.x - this.ball.radius <= 0 || this.ball.x + this.ball.radius >= canvas.width) {
-
-this.ball.reset();
+ball.speedX = -ball.speedX;
 
 }
 
+// punto marcado
+if(ball.x - ball.radius <= 0 || ball.x + ball.radius >= canvas.width){
+
+ball.reset();
+
 }
 
-handleInput() {
-
-window.addEventListener('keydown',(event)=>{
-this.keys[event.key] = true;
 });
 
-window.addEventListener('keyup',(event)=>{
-this.keys[event.key] = false;
+// control jugador
+if(this.keys["ArrowUp"]){
+
+this.paddle1.move("up");
+
+}
+
+if(this.keys["ArrowDown"]){
+
+this.paddle1.move("down");
+
+}
+
+// IA CPU sigue la primera pelota
+this.paddle2.autoMove(this.balls[0]);
+
+}
+
+handleInput(){
+
+window.addEventListener("keydown",(e)=>{
+
+this.keys[e.key] = true;
+
+});
+
+window.addEventListener("keyup",(e)=>{
+
+this.keys[e.key] = false;
+
 });
 
 }
 
-run() {
+run(){
 
 this.handleInput();
 
-const gameLoop = () => {
+const gameLoop = ()=>{
 
 this.update();
-
 this.draw();
 
 requestAnimationFrame(gameLoop);
